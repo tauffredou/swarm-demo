@@ -1,0 +1,23 @@
+{
+  "name": "swarm-viz",
+  "dependencies": {
+    "jquery": "latest",
+    "d3plus": "latest"
+  },
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "package.json",
+    "src",
+    "tests"
+  ],
+  "version": "0.0.0",
+  "authors": [
+    "Thomas Auffredou <tauffredou@xebia.fr>"
+  ],
+  "description": "Swarm container viz",
+  "license": "MIT",
+  "private": true
+}
