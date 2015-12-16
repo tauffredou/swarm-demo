@@ -15,6 +15,7 @@ import (
 	"crypto/tls"
 	"io/ioutil"
 	"crypto/x509"
+	"errors"
 )
 
 var (
@@ -82,38 +83,58 @@ func broadcast(event *dockerclient.Event) {
 	}
 }
 
+func NewTLSConfig(certPath string) (*tls.Config, error) {
+	if (certPath != "") {
+		cert := filepath.Join(certPath, "cert.pem")
+		key := filepath.Join(certPath, "key.pem")
+		ca := filepath.Join(certPath, "ca.pem")
+
+		// Read certificates
+		certPEMBlock, err := ioutil.ReadFile(cert)
+		if err != nil {
+			return nil, err
+		}
+		keyPEMBlock, err := ioutil.ReadFile(key)
+		if err != nil {
+			return nil, err
+		}
+		caPEMCert, err := ioutil.ReadFile(ca)
+		if err != nil {
+			return nil, err
+		}
+
+		tlsCert, err := tls.X509KeyPair(certPEMBlock, keyPEMBlock)
+		if err != nil {
+			return nil, err
+		}
+
+		// Create tlsConfig
+		tlsConfig := &tls.Config{Certificates: []tls.Certificate{tlsCert}}
+		if caPEMCert == nil {
+			tlsConfig.InsecureSkipVerify = true
+		} else {
+			caPool := x509.NewCertPool()
+			if !caPool.AppendCertsFromPEM(caPEMCert) {
+				return nil, errors.New("Could not add RootCA pem")
+			}
+			tlsConfig.RootCAs = caPool
+		}
+		return tlsConfig, nil
+	}
+	return nil, nil
+}
+
 func main() {
 	homeTempl = template.Must(template.ParseFiles(filepath.Join(*assets, "home.html")))
 
 	host := os.Getenv("DOCKER_HOST")
 	if ( host == "") {
 		host = "unix:///var/run/docker.sock"
-	}else{
-		certPath := os.Getenv("DOCKER_CERT_PATH")
-		if (certPath != "") {
+	}
 
-			cert2_b, _ := ioutil.ReadFile(filepath.Join(certPath,"cert.pem"))
-			log.Printf("%s",cert2_b)
-			priv2_b, _ := ioutil.ReadFile(filepath.Join(certPath,"key.pem"))
-			log.Printf("%s",priv2_b)
-			priv2, _ := x509.ParsePKCS1PrivateKey(priv2_b)
-			caCert_b, _ := ioutil.ReadFile(filepath.Join(certPath,"ca.pem"))
-
-			caCertPool := x509.NewCertPool()
-			caCertPool.AppendCertsFromPEM(caCert_b)
-
-			cert := tls.Certificate{
-				Certificate: [][]byte{ cert2_b },
-				PrivateKey: priv2,
-			}
-
-			tlsConfig = &tls.Config{
-				Certificates: []tls.Certificate{cert},
-				InsecureSkipVerify: true,
-				RootCAs:caCertPool,
-
-			}
-		}
+	tlsConfig, err := NewTLSConfig(os.Getenv("DOCKER_CERT_PATH"))
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	docker, err := dockerclient.NewDockerClient(host, tlsConfig)
