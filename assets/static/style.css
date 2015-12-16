@@ -1,0 +1,63 @@
+.container {
+    float: left;
+    padding: 20px;
+    margin: 10px;
+    font-size: 20pt;
+    border-radius: 4px;
+}
+
+.exited {
+    background: #d0a69d;
+    border: solid 1px #ae2c24;
+    color: #ffffff;
+}
+
+.up, .running {
+    background: #3e71bb;
+    border: solid 1px #4b87e0;
+    color: #ffffff;
+}
+
+.link {
+    fill: none;
+    stroke: #666;
+    stroke-width: 1.5px;
+}
+
+.node circle {
+    fill: #ccc;
+    stroke: #fff;
+    stroke-width: 1.5px;
+}
+
+circle.engine {
+    fill: #4a8fc2;
+}
+
+circle.engine {
+    fill: #c2150d;
+}
+
+.node rect {
+    fill: #4a8fc2;
+    width: 10px;
+    height: 10px;
+}
+
+.nodetext {
+    pointer-events: none;
+    font: 10px sans-serif;
+}
+
+text {
+    font: 10px sans-serif;
+    pointer-events: none;
+}
+
+#viz {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    left: 0;
+}
