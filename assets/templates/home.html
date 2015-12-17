@@ -5,7 +5,7 @@
     <script src="/static/jquery.min.js"></script>
     <script src="/static/d3.min.js"></script>
     <script src="/static/graph.js"></script>
-    <link rel="stylesheet" href="/static/style.css" />
+    <link rel="stylesheet" href="/static/style.css"/>
 
 </head>
 <body>
@@ -17,6 +17,7 @@
         var msg = $("#msg");
 
         function handleEvent(event) {
+
             var engine;
             if (event.image == 'tauffredou/swarm-demo') {
                 return
@@ -24,20 +25,19 @@
 
             var $container;
             var status = event.Running ? 'start' : 'die';
-            console.log(event);
             switch (status) {
                 case 'start':
-                    console.log(event);
-
                     var split = event.Name.split('/');
                     if (split.length > 1) {
                         engine = split[1];
+                        event.Name=split[2]
                     } else {
                         engine = "default"
+
                     }
+                    event.engine = engine;
                     graph.addNode(event.Id, status, event);
-                    graph.addEngine(engine, "1.2.3.4");
-                    graph.addLink(engine, event.Id);
+                    graph.addEngine(engine);
                     break;
                 case 'die':
                     graph.removeNode(event.Id);
@@ -61,8 +61,6 @@
             console.log($("<div><b>Your browser does not support WebSockets.</b></div>"))
         }
     });
-
-
 
     var graph = new Graph('#viz');
 
