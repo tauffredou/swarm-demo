@@ -4,6 +4,7 @@
 /swarm-demo
 /.idea
 /bower_components
+/bin
 /Godeps/_workspace
 
 /Godeps/Readme

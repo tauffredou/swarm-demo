@@ -25,11 +25,10 @@ _testmain.go
 *.test
 *.prof
 
-Godeps
-/Godeps
 vendor
 /vendor
 /bin
 bin
 /src
 src
+/dist
