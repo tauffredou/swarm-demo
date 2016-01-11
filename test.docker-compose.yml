@@ -1,0 +1,20 @@
+swarm-demo:
+  image: tauffredou/swarm-demo
+  volumes:
+    - "/home/docker:/certs/"
+  ports:
+  - 8080:8080
+  container_name: swarm-demo
+  environment:
+    DOCKER_HOST: tcp://swarm-manager:3376
+    DOCKER_CERT_PATH: "/certs"
+  links:
+  - swarm-manager
+swarm-manager:
+  image: swarm
+  volumes:
+  - "/var/lib/boot2docker:/certs"
+  command: manage --tlsverify --tlscacert=/certs/ca.pem --tlscert=/certs/server.pem --tlskey=/certs/server-key.pem -H 0.0.0.0:3376 nodes://192.168.99.100:2376
+  ports:
+  - "3376:3376"
+
