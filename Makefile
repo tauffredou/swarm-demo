@@ -10,19 +10,24 @@ GOFLAGS ?= $(GOFLAGS:) -a -installsuffix cgo
 
 all: build
 
-build: main.go
+build: swarm-demo.go
 	GO15VENDOREXPERIMENT=1 CGO_ENABLED=0 GOOS=linux go build $(GOFLAGS) -o ${BINARY} .
 
 image: dist
 	cp Dockerfile dist
 	docker build -t $(IMAGE) dist
 
-
 push:
 	docker push $(IMAGE)
 
+run-swarm:
+	docker-compose -f test.docker-compose.yml  up -d
+
 run:
-	docker-compose up -d
+	 DOCKER_HOST=192.168.99.100:3376 go run swarm-demo.go -assets=assets
+
+logs:
+	docker-compose -f test.docker-compose.yml  logs
 
 js:
 	bower install

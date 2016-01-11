@@ -1,36 +1,69 @@
 package main
 
 import (
-	"flag"
-	"github.com/samalba/dockerclient"
-	"github.com/gorilla/websocket"
-	"log"
-	"os"
-	"os/signal"
-	"syscall"
-	"net/http"
-	"text/template"
-	"path/filepath"
-	"strings"
 	"crypto/tls"
-	"io/ioutil"
 	"crypto/x509"
 	"errors"
+	"flag"
+	"github.com/gorilla/websocket"
+	"github.com/tauffredou/dockerclient" // Waiting for PR to be accepted
+	"io/ioutil"
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"path/filepath"
+	"syscall"
+	"text/template"
 )
 
 var (
 	connections map[*websocket.Conn]bool = make(map[*websocket.Conn]bool)
-	client *dockerclient.DockerClient
+	client      *dockerclient.DockerClient
 	assets = flag.String("assets", "./assets", "path to assets")
-	homeTempl *template.Template
+	homeTempl   *template.Template
 	upgrader = &websocket.Upgrader{ReadBufferSize: 1024, WriteBufferSize: 1024}
-	tlsConfig *tls.Config
 )
+
+type SwarmEvent struct {
+	Id      string
+	Running bool
+	Node    string
+	Name    string
+	Image   string
+	Created int64
+	Status  string
+}
 
 // Callback used to listen to Docker's events
 func eventCallback(event *dockerclient.Event, ec chan error, args ...interface{}) {
 	log.Printf("Received event: %#v\n", *event)
-	broadcast(event)
+	swarmEvent := SwarmEvent{
+		Id:      event.Id,
+		Created: event.Time,
+	}
+	if event.Status == "destroy" {
+		swarmEvent.Status = "destroy"
+	}
+	swarmEvent.mapEvenFromId()
+
+	broadcast(&swarmEvent)
+}
+
+func (se *SwarmEvent) mapEvenFromId() {
+	info, err := client.InspectContainer(se.Id)
+	if err != nil {
+		log.Println(err)
+		return
+	} else {
+		log.Printf("info: %s", info.Name)
+		se.Node = info.Node.Name
+		se.Name = info.Name
+		se.Running = info.State.Running
+		if se.Status == "" {
+			se.Status = info.State.StateString()
+		}
+	}
 }
 
 func waitForInterrupt() {
@@ -42,6 +75,7 @@ func waitForInterrupt() {
 	}
 }
 
+
 func wsHandler(w http.ResponseWriter, r *http.Request) {
 	c, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -50,41 +84,33 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	connections[c] = true
 
-	// Get only running containers
 	containers, err := client.ListContainers(true, false, "")
 	if err != nil {
 		log.Fatal(err)
 	}
 	for _, container := range containers {
-		status := map[bool]string{true: "start", false: "die"} [strings.HasPrefix(container.Status, "Up")]
-		e := dockerclient.Event{container.Id, status, container.Image, container.Created}
-		c.WriteJSON(&e)
+		swarmEvent := SwarmEvent{
+			Id:      container.Id,
+			Created: container.Created,
+		}
+		swarmEvent.mapEvenFromId()
+		c.WriteJSON(swarmEvent)
 	}
 
-	defer c.Close()
-	for {
-		mt, message, err := c.ReadMessage()
-		if err != nil {
-			log.Println("read:", err)
-			break
-		}
-		log.Printf("recv: %s", message)
-		err = c.WriteMessage(mt, message)
-		if err != nil {
-			log.Println("write:", err)
-			break
-		}
-	}
+	//		defer c.Close()
 }
 
-func broadcast(event *dockerclient.Event) {
-	for c := range connections {
-		c.WriteJSON(event)
+func broadcast(event *SwarmEvent) {
+	log.Printf("broadcast: %s", event)
+	if (event.Status != "") {
+		for c := range connections {
+			c.WriteJSON(event)
+		}
 	}
 }
 
 func NewTLSConfig(certPath string) (*tls.Config, error) {
-	if (certPath != "") {
+	if certPath != "" {
 		cert := filepath.Join(certPath, "cert.pem")
 		key := filepath.Join(certPath, "key.pem")
 		ca := filepath.Join(certPath, "ca.pem")
@@ -125,10 +151,11 @@ func NewTLSConfig(certPath string) (*tls.Config, error) {
 }
 
 func main() {
-	homeTempl = template.Must(template.ParseFiles(filepath.Join(*assets, "home.html")))
+	flag.Parse()
+	homeTempl = template.Must(template.ParseFiles(filepath.Join(*assets, "templates/home.html")))
 
 	host := os.Getenv("DOCKER_HOST")
-	if ( host == "") {
+	if host == "" {
 		host = "unix:///var/run/docker.sock"
 	}
 
@@ -143,11 +170,11 @@ func main() {
 	}
 
 	client = docker
-
 	client.StartMonitorEvents(eventCallback, nil)
 
-	http.HandleFunc("/js/", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, r.URL.Path[1:])
+	http.HandleFunc("/static/", func(w http.ResponseWriter, r *http.Request) {
+		file := filepath.Join(*assets, r.URL.Path[1:])
+		http.ServeFile(w, r, file)
 	})
 
 	http.HandleFunc("/", func(c http.ResponseWriter, req *http.Request) {

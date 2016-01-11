@@ -7,31 +7,26 @@ function Graph(el) {
     var color = d3.scale.category20().domain(engines);
 
     // Add and remove elements on the graph object
-    this.addNode = function (id, status, data) {
-        nodes.push({"id": id, "status": status, "data": data, 'type': 'container', engine: data.engine});
+    this.addNode = function (event) {
+        var node = findNode(event.Id);
+        if (node != null) {
+            node.data = event
+        } else {
+            nodes.push({"id": event.Id, "data": event, 'type': 'container'});
+        }
         update();
     };
 
     this.removeNode = function (id) {
+        console.log("Remove " + id);
         var i = 0;
         var n = findNode(id);
-        while (i < links.length) {
-            if ((links[i]['source'] === n) || (links[i]['target'] == n)) links.splice(i, 1);
-            else i++;
-        }
         var index = findNodeIndex(id);
         if (index !== undefined) {
             nodes.splice(index, 1);
             update();
         }
     };
-
-    this.addEngine = function (name) {
-        if (indexOf(engines, name) == -1) {
-            engines.push(name)
-        }
-    };
-
 
     var indexOf = function (stack, needle) {
         for (i = 0; i < stack.length; i++) {
@@ -43,7 +38,7 @@ function Graph(el) {
     };
 
     var nodeColor = function (d) {
-        if ((index = indexOf(engines, d.data.engine)) != -1) {
+        if ((index = indexOf(engines, d.data.Node)) != -1) {
             return color(index)
         }
         return color(0);
@@ -68,10 +63,9 @@ function Graph(el) {
         .attr("height", h);
 
     var force = d3.layout.force()
-        .gravity(0.5)
-        .charge(-300)
-        .distance(60)
-        .linkDistance(250)
+        .gravity(0.3)
+        .charge(-400)
+        .distance(20)
         .size([w, h]);
 
     var nodes = force.nodes();
@@ -101,25 +95,24 @@ function Graph(el) {
                 return d.id;
             });
 
-
         var nodeEnter = node.enter().append("g")
             .attr("class", "node")
-            .classed(function (d) {
-                d.type
-            })
             .call(force.drag);
 
         nodeEnter.append('circle')
-            .attr('r', 8)
-            .classed("running", function (d) {
-                return d.Status
-            }).style("fill", nodeColor);
+            .attr('r', 20)
+            .style("stroke", nodeColor)
+            .style("fill", function (d) {
+                console.log(d.data.Running)
+                return d.data.Running ? "#1EC200" : "red"
+            })
+            .style("stroke-width", 14);
 
         force.on("tick", tick);
 
         nodeEnter.append("text")
             .attr("class", "nodetext")
-            .attr("dx", 12)
+            .attr("dx", 25)
             .attr("dy", ".35em")
             .text(function (d) {
                 if (d.type == 'container') {

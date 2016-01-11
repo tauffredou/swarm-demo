@@ -11,43 +11,33 @@
 <body>
 
 <div id="viz"></div>
+
 <script type="text/javascript">
     $(function () {
         var conn;
-        var msg = $("#msg");
 
         function handleEvent(event) {
 
-            var engine;
             if (event.image == 'tauffredou/swarm-demo') {
                 return
             }
 
-            var $container;
-            var status = event.Running ? 'start' : 'die';
-            switch (status) {
-                case 'start':
-                    var split = event.Name.split('/');
-                    if (split.length > 1) {
-                        engine = split[1];
-                        event.Name=split[2]
-                    } else {
-                        engine = "default"
-
-                    }
-                    event.engine = engine;
-                    graph.addNode(event.Id, status, event);
-                    graph.addEngine(engine);
-                    break;
-                case 'die':
-                    graph.removeNode(event.Id);
+            switch (event.Status) {
+                case 'running':
+                case 'exited':
+                    graph.addNode(event);
+                    console.log(event);
                     break;
                 case 'destroy':
-                    $container = $("#" + event.Id);
-                    $container.hide(200, function () {
-                        $container.remove();
-                    });
+                    graph.removeNode(event.Id);
+                    console.log(event);
+//                    $container = $("#" + event.Id);
+//                    $container.hide(200, function () {
+//                        $container.remove();
+//                    });
+                    break;
             }
+            console.log(event);
         }
 
         if (window["WebSocket"]) {
@@ -58,7 +48,7 @@
                 handleEvent(JSON.parse(evt.data));
             }
         } else {
-            console.log($("<div><b>Your browser does not support WebSockets.</b></div>"))
+            console.log("Your browser does not support WebSockets")
         }
     });
 
