@@ -4,4 +4,6 @@
 /swarm-demo
 /.idea
 /bower_components
-# Created by .ignore support plugin (hsz.mobi)
+/Godeps/_workspace
+
+/Godeps/Readme

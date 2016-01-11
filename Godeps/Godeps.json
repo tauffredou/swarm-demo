@@ -1,0 +1,19 @@
+{
+	"ImportPath": "github.com/tauffredou/swarm-demo",
+	"GoVersion": "go1.5.1",
+	"Deps": [
+		{
+			"ImportPath": "github.com/docker/go-units",
+			"Comment": "v0.1.0-9-g954fed0",
+			"Rev": "954fed01cc617c55d838fa2230073f2cb17386c8"
+		},
+		{
+			"ImportPath": "github.com/gorilla/websocket",
+			"Rev": "361d4c0ffd78338ebe0a9e6320cdbe115d7dc026"
+		},
+		{
+			"ImportPath": "github.com/tauffredou/dockerclient",
+			"Rev": "ab28bfd1c516a3c2082e6aea3c1266ed02cc263c"
+		}
+	]
+}
