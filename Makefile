@@ -29,16 +29,10 @@ run:
 logs:
 	docker-compose -f test.docker-compose.yml  logs
 
-js:
-	bower install
-
-run-vsct:
-	docker-compose -p vsct -f vsct.docker-compose.yml up -d
-
 dist: ${BINARY}
 	rm -fr dist && mkdir dist
 	cp ${BINARY} dist
-	cp -R assets/* dist
+	cp -R assets dist/
 
 clean:
 	rm -fr dist
